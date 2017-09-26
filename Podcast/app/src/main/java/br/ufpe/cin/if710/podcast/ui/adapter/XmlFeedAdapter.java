@@ -1,9 +1,5 @@
 package br.ufpe.cin.if710.podcast.ui.adapter;
 
-/**
- * Created by leopoldomt on 9/19/17.
- */
-
 import java.util.List;
 import android.content.Context;
 import android.view.View;

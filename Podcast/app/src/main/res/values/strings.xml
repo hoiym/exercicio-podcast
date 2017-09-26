@@ -3,7 +3,7 @@
     <string name="action_download">baixar</string>
     <string name="action_downloading">baixando...</string>
     <string name="action_listen">escutar</string>
-    <string name="feed_link">http://rss.cnn.com/rss/edition.rss</string>
+    <string name="feed_link">http://leopoldomt.com/if710/fronteirasdaciencia.xml</string>
     <string name="change">Modificar</string>
     <string name="cancel">Cancelar</string>
     <string name="pref_title">Mudar Link do Feed</string>

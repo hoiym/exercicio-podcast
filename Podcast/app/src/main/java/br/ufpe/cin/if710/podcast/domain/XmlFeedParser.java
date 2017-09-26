@@ -82,6 +82,7 @@ public class XmlFeedParser {
             else if (name.equals("enclosure")) {
                 //TODO implementar resto do metodo para pegar atributo url da tag enclosure
                 downloadLink = readEnclosure(parser);
+                skip(parser);
             }
             else {
                 skip(parser);
@@ -113,9 +114,9 @@ public class XmlFeedParser {
     // Processa tags do tipo <enclosure> para obter dados do episodio
     public static String readEnclosure(XmlPullParser parser)
             throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, null, "enclosure");
+        //parser.require(XmlPullParser.START_TAG, null, "enclosure");
         String data = "implementar...";
-        parser.require(XmlPullParser.END_TAG, null, "enclosure");
+        //parser.require(XmlPullParser.END_TAG, null, "enclosure");
         return data;
     }
 
