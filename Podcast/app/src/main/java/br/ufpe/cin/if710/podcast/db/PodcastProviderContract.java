@@ -9,13 +9,15 @@ import android.net.Uri;
 
 public class PodcastProviderContract {
 
+    // Modificação nos valores da string para acessar os nomes das colunas
+    // sem necessidade de chamar diretamente o helper
     public static final String _ID = "_id";
-    public static final String TITLE = "nome";
-    public static final String DATE = "cpf";
-    public static final String DESCRIPTION = "email";
-    public static final String EPISODE_LINK = "media";
-    public static final String DOWNLOAD_LINK = "media";
-    public static final String EPISODE_URI = "media";
+    public static final String TITLE = PodcastDBHelper.EPISODE_TITLE;
+    public static final String DATE = PodcastDBHelper.EPISODE_DATE;
+    public static final String DESCRIPTION = PodcastDBHelper.EPISODE_DESC;
+    public static final String EPISODE_LINK = PodcastDBHelper.EPISODE_LINK;
+    public static final String DOWNLOAD_LINK = PodcastDBHelper.EPISODE_DOWNLOAD_LINK;
+    public static final String EPISODE_URI = PodcastDBHelper.EPISODE_FILE_URI;
     public static final String EPISODE_TABLE = "episodes";
 
 

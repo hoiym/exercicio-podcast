@@ -117,6 +117,7 @@ public class XmlFeedParser {
     // Processa tags do tipo <enclosure> para obter dados do episodio
     public static String readEnclosure(XmlPullParser parser)
             throws IOException, XmlPullParserException {
+        // Leitura da url do podcast
         parser.require(XmlPullParser.START_TAG, null, "enclosure");
         String data = parser.getAttributeValue(null, "url");
         //parser.require(XmlPullParser.END_TAG, null, "enclosure");

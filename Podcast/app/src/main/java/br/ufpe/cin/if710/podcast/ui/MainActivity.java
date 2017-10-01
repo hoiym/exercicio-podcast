@@ -1,7 +1,9 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Menu;
@@ -22,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
+import br.ufpe.cin.if710.podcast.db.PodcastProvider;
+import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.domain.XmlFeedParser;
 import br.ufpe.cin.if710.podcast.ui.adapter.XmlFeedAdapter;
@@ -99,6 +104,36 @@ public class MainActivity extends Activity {
         protected void onPostExecute(List<ItemFeed> feed) {
             Toast.makeText(getApplicationContext(), "terminando...", Toast.LENGTH_SHORT).show();
 
+            int feedSz = feed.size();
+
+            for(int i = 0; i < feedSz; ++i){
+                ContentValues contentValues = new ContentValues();
+
+                contentValues.put(PodcastProviderContract.TITLE, feed.get(i).getTitle());
+                contentValues.put(PodcastProviderContract.DATE, feed.get(i).getPubDate());
+                contentValues.put(PodcastProviderContract.DESCRIPTION, feed.get(i).getDescription());
+                contentValues.put(PodcastProviderContract.EPISODE_LINK, feed.get(i).getLink());
+                contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, feed.get(i).getDownloadLink());
+                contentValues.put(PodcastProviderContract.EPISODE_URI, "");
+
+                getContentResolver().insert(PodcastProviderContract.EPISODE_LIST_URI, contentValues);
+            }
+
+            // Código para verificação da quantidade de itens inseridos
+            /*
+            Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI, null,
+                                                       null, null, null);
+            int numItems = 0;
+
+            if(cursor != null){
+                while(cursor.moveToNext()){
+                    numItems++;
+                }
+            }
+
+            Toast.makeText(getApplicationContext(), String.valueOf(numItems), Toast.LENGTH_LONG);
+            */
+
             //Adapter Personalizado
             XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, feed);
 
@@ -115,7 +150,7 @@ public class MainActivity extends Activity {
                     Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
                 }
             });
-            /**/
+            */
         }
     }
 
