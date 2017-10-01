@@ -4,8 +4,10 @@ import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -103,20 +105,29 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(List<ItemFeed> feed) {
             Toast.makeText(getApplicationContext(), "terminando...", Toast.LENGTH_SHORT).show();
+            String title, date, description, link, downloadLink;
 
             int feedSz = feed.size();
 
             for(int i = 0; i < feedSz; ++i){
                 ContentValues contentValues = new ContentValues();
 
-                contentValues.put(PodcastProviderContract.TITLE, feed.get(i).getTitle());
-                contentValues.put(PodcastProviderContract.DATE, feed.get(i).getPubDate());
-                contentValues.put(PodcastProviderContract.DESCRIPTION, feed.get(i).getDescription());
-                contentValues.put(PodcastProviderContract.EPISODE_LINK, feed.get(i).getLink());
-                contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, feed.get(i).getDownloadLink());
+                title = ""; date = ""; description = ""; link = ""; downloadLink = "";
+
+                if(feed.get(i).getTitle() != null) title = feed.get(i).getTitle();
+                if(feed.get(i).getPubDate() != null) date = feed.get(i).getPubDate();
+                if(feed.get(i).getDescription() != null) description = feed.get(i).getDescription();
+                if(feed.get(i).getLink() != null) link = feed.get(i).getLink();
+                if(feed.get(i).getDownloadLink() != null) downloadLink = feed.get(i).getDownloadLink();
+
+                contentValues.put(PodcastProviderContract.TITLE, title);
+                contentValues.put(PodcastProviderContract.DATE, date);
+                contentValues.put(PodcastProviderContract.DESCRIPTION, description);
+                contentValues.put(PodcastProviderContract.EPISODE_LINK, link);
+                contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
                 contentValues.put(PodcastProviderContract.EPISODE_URI, "");
 
-                getContentResolver().insert(PodcastProviderContract.EPISODE_LIST_URI, contentValues);
+                Uri uri = getContentResolver().insert(PodcastProviderContract.EPISODE_LIST_URI, contentValues);
             }
 
             // Código para verificação da quantidade de itens inseridos
