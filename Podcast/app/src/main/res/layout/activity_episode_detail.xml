@@ -6,4 +6,45 @@
     android:layout_height="match_parent"
     tools:context="br.ufpe.cin.if710.podcast.ui.EpisodeDetailActivity">
 
+    <TextView
+        android:id="@+id/episode_detail_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Title"
+        tools:layout_editor_absoluteY="16dp"
+        tools:layout_editor_absoluteX="16dp" />
+
+    <TextView
+        android:id="@+id/episode_detail_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Date"
+        app:layout_constraintTop_toBottomOf="@+id/episode_detail_title" />
+
+    <TextView
+        android:id="@+id/episode_detail_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Description"
+        app:layout_constraintTop_toBottomOf="@+id/episode_detail_date" />
+
+    <TextView
+        android:id="@+id/episode_detail_link"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Link"
+        app:layout_constraintTop_toBottomOf="@+id/episode_detail_description" />
+
+    <TextView
+        android:id="@+id/episode_detail_downloadLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:text="Download Link"
+        app:layout_constraintTop_toBottomOf="@+id/episode_detail_link" />
+
 </android.support.constraint.ConstraintLayout>

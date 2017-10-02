@@ -2,6 +2,8 @@ package br.ufpe.cin.if710.podcast.ui.adapter;
 
 import java.util.List;
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -9,14 +11,19 @@ import android.widget.TextView;
 
 import br.ufpe.cin.if710.podcast.R;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
+import br.ufpe.cin.if710.podcast.ui.EpisodeDetailActivity;
 
 public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
 
     int linkResource;
+    Context adapterContext;
+    List<ItemFeed> items;
 
     public XmlFeedAdapter(Context context, int resource, List<ItemFeed> objects) {
         super(context, resource, objects);
         linkResource = resource;
+        adapterContext = context;
+        items = objects;
     }
 
     /**
@@ -52,7 +59,7 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent) {
         ViewHolder holder;
         if (convertView == null) {
             convertView = View.inflate(getContext(), linkResource, null);
@@ -60,6 +67,20 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
             holder.item_title = (TextView) convertView.findViewById(R.id.item_title);
             holder.item_date = (TextView) convertView.findViewById(R.id.item_date);
             convertView.setTag(holder);
+            convertView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view){
+                    // Logs de debug
+                    Log.v("Adapter Pos: ", String.valueOf(position));
+                    Log.i("Atapter Title: ", items.get(position).getTitle().toString());
+                    Intent intent = new Intent(adapterContext, EpisodeDetailActivity.class);
+                    // Inserção do extra para ser obtido na activity de EpisodeDetailActivity
+                    intent.putExtra("podcastItem", items.get(position));
+                    // Adição de flag para chamar nova activity fora de uma activity
+                    intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
+                    adapterContext.startActivity(intent);
+                }
+            });
         } else {
             holder = (ViewHolder) convertView.getTag();
         }

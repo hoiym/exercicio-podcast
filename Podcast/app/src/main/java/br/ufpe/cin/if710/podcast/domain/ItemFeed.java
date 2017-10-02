@@ -1,6 +1,11 @@
 package br.ufpe.cin.if710.podcast.domain;
 
-public class ItemFeed {
+import java.io.Serializable;
+
+// https://stackoverflow.com/questions/2736389/how-to-pass-an-object-from-one-activity-to-another-on-android
+// Segundo link acima, se a custom class implementar a interface Serializable, poderá ser passada o objeto
+// por meio de putExtra
+public class ItemFeed implements Serializable{
     private final String title;
     private final String link;
     private final String pubDate;

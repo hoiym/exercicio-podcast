@@ -112,13 +112,20 @@ public class MainActivity extends Activity {
             for(int i = 0; i < feedSz; ++i){
                 ContentValues contentValues = new ContentValues();
 
+                // Caso seja lido algum atributo nulo, inserir no banco como string vazia
                 title = ""; date = ""; description = ""; link = ""; downloadLink = "";
 
+                // Caso contrário, inserir a própria string
                 if(feed.get(i).getTitle() != null) title = feed.get(i).getTitle();
                 if(feed.get(i).getPubDate() != null) date = feed.get(i).getPubDate();
                 if(feed.get(i).getDescription() != null) description = feed.get(i).getDescription();
                 if(feed.get(i).getLink() != null) link = feed.get(i).getLink();
                 if(feed.get(i).getDownloadLink() != null) downloadLink = feed.get(i).getDownloadLink();
+
+                /* Log de verificação do item sendo inserido
+                Log.i("Main: ", String.valueOf(i) + "\n" + title + "\n" + date + "\n" +
+                        description + "\n" + link + "\n" + downloadLink);
+                */
 
                 contentValues.put(PodcastProviderContract.TITLE, title);
                 contentValues.put(PodcastProviderContract.DATE, date);
