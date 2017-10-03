@@ -1,6 +1,7 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
@@ -83,6 +84,31 @@ public class MainActivity extends Activity {
         adapter.clear();
     }
 
+    public List<ItemFeed> getListFromDB(){
+        Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI, null,
+                null, null, null);
+
+        List<ItemFeed> listItem = new ArrayList<>();
+
+        // https://stackoverflow.com/questions/2810615/how-to-retrieve-data-from-cursor-class
+        // Extração de informação do cursor de acordo com o link acima
+
+        if(cursor.moveToFirst()){
+            do{
+                ItemFeed item = new ItemFeed(cursor.getString(cursor.getColumnIndex(PodcastProviderContract.TITLE)),
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_LINK)),
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DATE)),
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DESCRIPTION)),
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DOWNLOAD_LINK)));
+                listItem.add(item);
+            } while(cursor.moveToNext());
+        }
+
+        cursor.close();
+
+        return listItem;
+    }
+
     private class DownloadXmlTask extends AsyncTask<String, Void, List<ItemFeed>> {
         @Override
         protected void onPreExecute() {
@@ -109,6 +135,8 @@ public class MainActivity extends Activity {
 
             int feedSz = feed.size();
 
+            Log.v("Feed size: ", String.valueOf(feedSz));
+
             for(int i = 0; i < feedSz; ++i){
                 ContentValues contentValues = new ContentValues();
 
@@ -134,26 +162,32 @@ public class MainActivity extends Activity {
                 contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
                 contentValues.put(PodcastProviderContract.EPISODE_URI, "");
 
-                Uri uri = getContentResolver().insert(PodcastProviderContract.EPISODE_LIST_URI, contentValues);
+                String[] columns = {PodcastProviderContract.TITLE, PodcastProviderContract.DATE,
+                                    PodcastProviderContract.DESCRIPTION};
+                String selection = PodcastProviderContract.TITLE + " =? AND " + PodcastProviderContract.DATE + " =? AND " +
+                                    PodcastProviderContract.DESCRIPTION + " =? AND " + PodcastProviderContract.EPISODE_LINK + " =? AND " +
+                                    PodcastProviderContract.DOWNLOAD_LINK + " =?";
+                String[] selectionArgs = {title, date, description, link, downloadLink};
+
+                Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI,
+                                                columns, selection, selectionArgs, null);
+
+                if(cursor.getCount() == 0) {
+                    // Inserção no banco caso não seja encontrado neste
+                    Uri uri = getContentResolver().insert(PodcastProviderContract.EPISODE_LIST_URI, contentValues);
+                }
+
+                cursor.close();
             }
 
-            // Código para verificação da quantidade de itens inseridos
-            /*
+            /* Log para verificação da quantidade de itens inseridos
             Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI, null,
                                                        null, null, null);
-            int numItems = 0;
-
-            if(cursor != null){
-                while(cursor.moveToNext()){
-                    numItems++;
-                }
-            }
-
-            Toast.makeText(getApplicationContext(), String.valueOf(numItems), Toast.LENGTH_LONG);
+            Log.v("Count items: ", String.valueOf(cursor.getCount()));
             */
 
             //Adapter Personalizado
-            XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, feed);
+            XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, getListFromDB());
 
             //atualizar o list view
             items.setAdapter(adapter);
