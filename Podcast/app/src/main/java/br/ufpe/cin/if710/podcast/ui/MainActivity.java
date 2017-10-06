@@ -1,24 +1,31 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -192,6 +199,7 @@ public class MainActivity extends Activity {
             //atualizar o list view
             items.setAdapter(adapter);
             items.setTextFilterEnabled(true);
+
             /*
             items.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
@@ -205,6 +213,80 @@ public class MainActivity extends Activity {
             */
         }
     }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        IntentFilter f = new IntentFilter(DownloadService.DOWNLOAD_COMPLETE);
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onDownloadCompleteEvent, f);
+
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onDownloadCompleteEvent);
+    }
+
+    private BroadcastReceiver onDownloadCompleteEvent=new BroadcastReceiver() {
+        public void onReceive(Context ctxt, Intent i) {
+            Toast.makeText(ctxt, "Download finalizado!", Toast.LENGTH_LONG).show();
+
+            List<ItemFeed> update_list = getListFromDB();
+            int listFromDBsize = update_list.size();
+
+            Log.v("Downloaded: ", i.getStringExtra("downloaded"));
+            Log.v("BD List size: ", String.valueOf(listFromDBsize));
+
+            // Recepção do broadcast, verifica download de qual item foi concluído
+            for(int j = 0; j < listFromDBsize; ++j){
+                if(update_list.get(j).getDownloadLink().equals(i.getStringExtra("downloaded"))){
+                    View v = items.getChildAt(j - items.getFirstVisiblePosition());
+
+                    if(v == null)
+                        return;
+                    else{
+                        Button downloadButton = (Button) findViewById(R.id.item_action);
+                        downloadButton.setText("start");
+                        downloadButton.setEnabled(true);
+
+                        // Atualização do BD com informações da Uri do arquivo baixado
+                        File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        File audioFile = new File(root, Uri.parse(i.getStringExtra("downloaded")).getLastPathSegment());
+
+                        ContentValues contentValues = new ContentValues();
+                        String title, date, description, link, downloadLink;
+                        title = ""; date = ""; description = ""; link = ""; downloadLink = "";
+
+                        if(update_list.get(j).getTitle() != null) title = update_list.get(j).getTitle();
+                        if(update_list.get(j).getPubDate() != null) date = update_list.get(j).getPubDate();
+                        if(update_list.get(j).getDescription() != null) description = update_list.get(j).getDescription();
+                        if(update_list.get(j).getLink() != null) link = update_list.get(j).getLink();
+                        if(update_list.get(j).getDownloadLink() != null) downloadLink = update_list.get(j).getDownloadLink();
+
+                        contentValues.put(PodcastProviderContract.TITLE, title);
+                        contentValues.put(PodcastProviderContract.DATE, date);
+                        contentValues.put(PodcastProviderContract.DESCRIPTION, description);
+                        contentValues.put(PodcastProviderContract.EPISODE_LINK, link);
+                        contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
+                        contentValues.put(PodcastProviderContract.EPISODE_URI,
+                                Uri.parse("file://" + audioFile.getAbsolutePath()).toString());
+
+                        String selection = PodcastProviderContract.TITLE + " =? AND " + PodcastProviderContract.DATE + " =? AND " +
+                                PodcastProviderContract.DESCRIPTION + " =? AND " + PodcastProviderContract.EPISODE_LINK + " =? AND " +
+                                PodcastProviderContract.DOWNLOAD_LINK + " =?";
+                        String[] selectionArgs = {title, date, description, link, downloadLink};
+
+                        getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI, contentValues, selection, selectionArgs);
+                    }
+
+                    break;
+                }
+            }
+        }
+    };
 
     //TODO Opcional - pesquise outros meios de obter arquivos da internet
     private String getRssFeed(String feed) throws IOException {

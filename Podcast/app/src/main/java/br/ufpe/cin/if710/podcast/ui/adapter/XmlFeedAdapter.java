@@ -1,16 +1,27 @@
 package br.ufpe.cin.if710.podcast.ui.adapter;
 
+import java.io.File;
 import java.util.List;
+
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Environment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import br.ufpe.cin.if710.podcast.R;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
+import br.ufpe.cin.if710.podcast.ui.DownloadService;
 import br.ufpe.cin.if710.podcast.ui.EpisodeDetailActivity;
 
 public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
@@ -18,6 +29,7 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
     int linkResource;
     Context adapterContext;
     List<ItemFeed> items;
+    MediaPlayer mPlayer;
 
     public XmlFeedAdapter(Context context, int resource, List<ItemFeed> objects) {
         super(context, resource, objects);
@@ -81,6 +93,43 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
                     adapterContext.startActivity(intent);
                 }
             });
+
+            final Button itemButton = (Button) convertView.findViewById(R.id.item_action);
+            // Detecção de click no botão de download
+            itemButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Log.v("Adapter Item clicked: ", String.valueOf(position));
+
+                    // Configuração do botão para executar / pausar / continuar áudio
+                    if(itemButton.getText().equals("baixar")) {
+                        // Baixar arquivo caso ainda esteja baixado
+                        itemButton.setEnabled(false);
+                        Intent downloadService = new Intent(adapterContext, DownloadService.class);
+                        downloadService.setData(Uri.parse(items.get(position).getDownloadLink()));
+
+                        Log.v("CALLING: ", items.get(position).getDownloadLink());
+                        downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
+                        adapterContext.startService(downloadService);
+                    } else if(itemButton.getText().equals("start")){
+                        // Executar áudio caso já tenha sido baixado
+                        File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        File audioFile = new File(root, Uri.parse(items.get(position).getDownloadLink()).getLastPathSegment());
+                        Uri audioUri = Uri.parse("file://" + audioFile.getAbsolutePath());
+                        mPlayer = new MediaPlayer();
+                        mPlayer = MediaPlayer.create(adapterContext, audioUri);
+                        mPlayer.start();
+                        itemButton.setText("pause");
+                    } else if(itemButton.getText().equals("pause")){
+                        mPlayer.pause();
+                        itemButton.setText("play");
+                    } else {
+                        mPlayer.start();
+                        itemButton.setText("pause");
+                    }
+                }
+            });
+
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
