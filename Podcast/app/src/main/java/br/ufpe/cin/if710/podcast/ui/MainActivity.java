@@ -1,6 +1,8 @@
 package br.ufpe.cin.if710.podcast.ui;
 
 import android.app.Activity;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
 import android.content.ContentValues;
@@ -12,6 +14,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
@@ -41,6 +44,8 @@ import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.domain.XmlFeedParser;
 import br.ufpe.cin.if710.podcast.ui.adapter.XmlFeedAdapter;
 
+import static br.ufpe.cin.if710.podcast.db.PodcastDBHelper.columns;
+
 public class MainActivity extends Activity {
 
     //ao fazer envio da resolucao, use este link no seu codigo!
@@ -55,6 +60,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         items = (ListView) findViewById(R.id.items);
+        updateListView();
     }
 
     @Override
@@ -82,6 +88,7 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         new DownloadXmlTask().execute(RSS_FEED);
+        updateListView();
     }
 
     @Override
@@ -108,10 +115,21 @@ public class MainActivity extends Activity {
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DESCRIPTION)),
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DOWNLOAD_LINK)));
                 listItem.add(item);
-            } while(cursor.moveToNext());
+
+                /*
+                Log.v("Getting: ", cursor.getString(cursor.getColumnIndex(PodcastProviderContract.TITLE)) + " " +
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_LINK)) + " " +
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DATE)) + " " +
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DESCRIPTION)) + " " +
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DOWNLOAD_LINK)));
+                */
+                cursor.moveToNext();
+            } while(!cursor.isAfterLast());
         }
 
         cursor.close();
+
+        Log.d("Size of list from db: ", String.valueOf(listItem.size()));
 
         return listItem;
     }
@@ -167,7 +185,7 @@ public class MainActivity extends Activity {
                 contentValues.put(PodcastProviderContract.DESCRIPTION, description);
                 contentValues.put(PodcastProviderContract.EPISODE_LINK, link);
                 contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
-                contentValues.put(PodcastProviderContract.EPISODE_URI, "");
+                contentValues.put(PodcastProviderContract.EPISODE_URI, "-");
 
                 String[] columns = {PodcastProviderContract.TITLE, PodcastProviderContract.DATE,
                                     PodcastProviderContract.DESCRIPTION};
@@ -181,39 +199,39 @@ public class MainActivity extends Activity {
 
                 if(cursor.getCount() == 0) {
                     // Inserção no banco caso não seja encontrado neste
+                    /*
+                    Log.v("Insert item: ", String.valueOf(i));
+                    Log.v("Details: ", contentValues.get(PodcastProviderContract.TITLE).toString() + " " +
+                            contentValues.get(PodcastProviderContract.DATE).toString() + " " +
+                            contentValues.get(PodcastProviderContract.DESCRIPTION).toString() + " " +
+                            contentValues.get(PodcastProviderContract.DOWNLOAD_LINK).toString());
+                    */
                     Uri uri = getContentResolver().insert(PodcastProviderContract.EPISODE_LIST_URI, contentValues);
                 }
 
                 cursor.close();
             }
 
+            updateListView();
+            Log.i("Aqui", "");
+
             /* Log para verificação da quantidade de itens inseridos
             Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI, null,
                                                        null, null, null);
             Log.v("Count items: ", String.valueOf(cursor.getCount()));
             */
-
-            //Adapter Personalizado
-            XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, getListFromDB());
-
-            //atualizar o list view
-            items.setAdapter(adapter);
-            items.setTextFilterEnabled(true);
-
-            /*
-            items.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    XmlFeedAdapter adapter = (XmlFeedAdapter) parent.getAdapter();
-                    ItemFeed item = adapter.getItem(position);
-                    String msg = item.getTitle() + " " + item.getLink();
-                    Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-                }
-            });
-            */
         }
     }
 
+    // Atualização da listView de acordo com lista de items presentes no BD
+    public void updateListView(){
+        //Adapter Personalizado
+        List<ItemFeed> update_list = getListFromDB();
+        XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, update_list);
+
+        items.setAdapter(adapter);
+        items.setTextFilterEnabled(true);
+    }
 
     @Override
     protected void onResume() {
@@ -221,7 +239,79 @@ public class MainActivity extends Activity {
         IntentFilter f = new IntentFilter(DownloadService.DOWNLOAD_COMPLETE);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onDownloadCompleteEvent, f);
 
+        List<ItemFeed> update_list = getListFromDB();
+        int listFromDBsize = update_list.size();
+        String title, date, description, link, downloadLink;
+        Log.d("OLA: ", String.valueOf(listFromDBsize));
+        Log.d("HEY: ", String.valueOf(items.getCount()));
 
+        for(int j = 0; j < listFromDBsize; ++j){
+            View v = items.getChildAt(j-items.getFirstVisiblePosition());
+            View view = items.getAdapter().getView(j, v, items);
+
+            Log.v("foo >", String.valueOf(j));
+
+            if(view == null)
+                return;
+            else{
+                Log.v("AQUI >", " AQUI");
+                ContentValues contentValues = new ContentValues();
+                title = ""; date = ""; description = ""; link = ""; downloadLink = "";
+
+                if(update_list.get(j).getTitle() != null) title = update_list.get(j).getTitle();
+                if(update_list.get(j).getPubDate() != null) date = update_list.get(j).getPubDate();
+                if(update_list.get(j).getDescription() != null) description = update_list.get(j).getDescription();
+                if(update_list.get(j).getLink() != null) link = update_list.get(j).getLink();
+                if(update_list.get(j).getDownloadLink() != null) downloadLink = update_list.get(j).getDownloadLink();
+
+                contentValues.put(PodcastProviderContract.TITLE, title);
+                contentValues.put(PodcastProviderContract.DATE, date);
+                contentValues.put(PodcastProviderContract.DESCRIPTION, description);
+                contentValues.put(PodcastProviderContract.EPISODE_LINK, link);
+                contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
+
+                String selection = PodcastProviderContract.TITLE + " =? AND " + PodcastProviderContract.DATE + " =? AND " +
+                        PodcastProviderContract.DESCRIPTION + " =? AND " + PodcastProviderContract.EPISODE_LINK + " =? AND " +
+                        PodcastProviderContract.DOWNLOAD_LINK + " =?";
+                String[] selectionArgs = {title, date, description, link, downloadLink};
+                String[] columns = {PodcastProviderContract.TITLE, PodcastProviderContract.DATE,
+                        PodcastProviderContract.DESCRIPTION, PodcastProviderContract.EPISODE_URI};
+
+                Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI,
+                        columns, selection, selectionArgs, null);
+
+                Log.v("Column count: ", String.valueOf(cursor.getColumnCount()));
+                Log.v("EPISODE URI: ", String.valueOf(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI)));
+
+                if (cursor.moveToFirst()) {
+                    do {
+                        StringBuilder sb = new StringBuilder();
+                        int columnsQty = cursor.getColumnCount();
+                        for (int idx=0; idx<columnsQty; ++idx) {
+                            if(idx == 3) {
+                                Log.i("URI: ", cursor.getString(idx));
+                                Log.i("IS empty: ", String.valueOf(cursor.getString(idx).equals("-")));
+                            }
+                            if (idx == 3 && cursor.getString(idx).equals("-") == false) {
+                                Button downloadButton = (Button) view.findViewById(R.id.item_action);
+                                downloadButton.setText("start");
+                                downloadButton.setEnabled(true);
+                            }
+                        }
+                    } while (cursor.moveToNext());
+                }
+
+                cursor.close();
+                /*
+                if(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI) != -1 &&
+                        !cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI)).equals("")){
+                    Button downloadButton = (Button) findViewById(R.id.item_action);
+                    downloadButton.setText("start");
+                    downloadButton.setEnabled(true);
+                }
+                */
+            }
+        }
     }
 
     @Override
@@ -242,13 +332,18 @@ public class MainActivity extends Activity {
 
             // Recepção do broadcast, verifica download de qual item foi concluído
             for(int j = 0; j < listFromDBsize; ++j){
+                Log.d("Enter ", "loop to update button " + String.valueOf(j));
                 if(update_list.get(j).getDownloadLink().equals(i.getStringExtra("downloaded"))){
-                    View v = items.getChildAt(j - items.getFirstVisiblePosition());
+                    View v = items.getChildAt(j-items.getFirstVisiblePosition());
+                    View view = items.getAdapter().getView(j, v, items);
 
-                    if(v == null)
+                    if(view == null) {
+                        Log.i("Receiver: ", "NULL VIEW");
                         return;
+                    }
                     else{
-                        Button downloadButton = (Button) findViewById(R.id.item_action);
+                        Log.i("Receiver: ", "enable button to play " + String.valueOf(j));
+                        Button downloadButton = (Button) view.findViewById(R.id.item_action);
                         downloadButton.setText("start");
                         downloadButton.setEnabled(true);
 

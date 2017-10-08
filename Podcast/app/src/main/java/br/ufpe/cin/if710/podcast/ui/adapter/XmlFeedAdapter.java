@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -68,71 +69,75 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
     static class ViewHolder {
         TextView item_title;
         TextView item_date;
+        Button item_action;
     }
 
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
-        ViewHolder holder;
+        final ViewHolder holder;
         if (convertView == null) {
+            //LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            //convertView = inflater.inflate(R.layout.itemlista, parent, false);
             convertView = View.inflate(getContext(), linkResource, null);
             holder = new ViewHolder();
             holder.item_title = (TextView) convertView.findViewById(R.id.item_title);
             holder.item_date = (TextView) convertView.findViewById(R.id.item_date);
+            holder.item_action = (Button) convertView.findViewById(R.id.item_action);
             convertView.setTag(holder);
-            convertView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view){
-                    // Logs de debug
-                    Log.v("Adapter Pos: ", String.valueOf(position));
-                    Log.i("Atapter Title: ", items.get(position).getTitle().toString());
-                    Intent intent = new Intent(adapterContext, EpisodeDetailActivity.class);
-                    // Inserção do extra para ser obtido na activity de EpisodeDetailActivity
-                    intent.putExtra("podcastItem", items.get(position));
-                    // Adição de flag para chamar nova activity fora de uma activity
-                    intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
-                    adapterContext.startActivity(intent);
-                }
-            });
-
-            final Button itemButton = (Button) convertView.findViewById(R.id.item_action);
-            // Detecção de click no botão de download
-            itemButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    Log.v("Adapter Item clicked: ", String.valueOf(position));
-
-                    // Configuração do botão para executar / pausar / continuar áudio
-                    if(itemButton.getText().equals("baixar")) {
-                        // Baixar arquivo caso ainda esteja baixado
-                        itemButton.setEnabled(false);
-                        Intent downloadService = new Intent(adapterContext, DownloadService.class);
-                        downloadService.setData(Uri.parse(items.get(position).getDownloadLink()));
-
-                        Log.v("CALLING: ", items.get(position).getDownloadLink());
-                        downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
-                        adapterContext.startService(downloadService);
-                    } else if(itemButton.getText().equals("start")){
-                        // Executar áudio caso já tenha sido baixado
-                        File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                        File audioFile = new File(root, Uri.parse(items.get(position).getDownloadLink()).getLastPathSegment());
-                        Uri audioUri = Uri.parse("file://" + audioFile.getAbsolutePath());
-                        mPlayer = new MediaPlayer();
-                        mPlayer = MediaPlayer.create(adapterContext, audioUri);
-                        mPlayer.start();
-                        itemButton.setText("pause");
-                    } else if(itemButton.getText().equals("pause")){
-                        mPlayer.pause();
-                        itemButton.setText("play");
-                    } else {
-                        mPlayer.start();
-                        itemButton.setText("pause");
-                    }
-                }
-            });
-
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
+        convertView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view){
+                // Logs de debug
+                Log.v("Adapter Pos: ", String.valueOf(position));
+                Log.i("Atapter Title: ", items.get(position).getTitle().toString());
+                Intent intent = new Intent(adapterContext, EpisodeDetailActivity.class);
+                // Inserção do extra para ser obtido na activity de EpisodeDetailActivity
+                intent.putExtra("podcastItem", items.get(position));
+                // Adição de flag para chamar nova activity fora de uma activity
+                intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
+                adapterContext.startActivity(intent);
+            }
+        });
+
+        Button itemButton = (Button) convertView.findViewById(R.id.item_action);
+        // Detecção de click no botão de download
+        itemButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.v("Adapter Item clicked: ", String.valueOf(position));
+
+                // Configuração do botão para executar / pausar / continuar áudio
+                if(holder.item_action.getText().toString().equals("baixar")) {
+                    // Baixar arquivo caso ainda esteja baixado
+                    holder.item_action.setEnabled(false);
+                    Intent downloadService = new Intent(adapterContext, DownloadService.class);
+                    downloadService.setData(Uri.parse(items.get(position).getDownloadLink()));
+
+                    Log.v("CALLING: ", items.get(position).getDownloadLink());
+                    downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
+                    adapterContext.startService(downloadService);
+                } else if(holder.item_action.getText().toString().equals("start")){
+                    // Executar áudio caso já tenha sido baixado
+                    File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File audioFile = new File(root, Uri.parse(items.get(position).getDownloadLink()).getLastPathSegment());
+                    Uri audioUri = Uri.parse("file://" + audioFile.getAbsolutePath());
+                    mPlayer = new MediaPlayer();
+                    mPlayer = MediaPlayer.create(adapterContext, audioUri);
+                    mPlayer.start();
+                    holder.item_action.setText("pause");
+                } else if(holder.item_action.getText().toString().equals("pause")){
+                    mPlayer.pause();
+                    holder.item_action.setText("play");
+                } else {
+                    mPlayer.start();
+                    holder.item_action.setText("pause");
+                }
+            }
+        });
+
         holder.item_title.setText(getItem(position).getTitle());
         holder.item_date.setText(getItem(position).getPubDate());
         return convertView;
