@@ -293,6 +293,7 @@ public class MainActivity extends Activity {
                                 Log.i("IS empty: ", String.valueOf(cursor.getString(idx).equals("-")));
                             }
                             if (idx == 3 && cursor.getString(idx).equals("-") == false) {
+                                Log.i("On Resume: ", "enable button to play " + String.valueOf(j));
                                 Button downloadButton = (Button) view.findViewById(R.id.item_action);
                                 downloadButton.setText("start");
                                 downloadButton.setEnabled(true);
