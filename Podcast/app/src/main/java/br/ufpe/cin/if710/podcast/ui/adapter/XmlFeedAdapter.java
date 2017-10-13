@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -29,14 +30,12 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
 
     int linkResource;
     Context adapterContext;
-    List<ItemFeed> items;
     MediaPlayer mPlayer;
 
     public XmlFeedAdapter(Context context, int resource, List<ItemFeed> objects) {
         super(context, resource, objects);
         linkResource = resource;
         adapterContext = context;
-        items = objects;
     }
 
     /**
@@ -76,8 +75,6 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
     public View getView(final int position, View convertView, ViewGroup parent) {
         final ViewHolder holder;
         if (convertView == null) {
-            //LayoutInflater inflater = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            //convertView = inflater.inflate(R.layout.itemlista, parent, false);
             convertView = View.inflate(getContext(), linkResource, null);
             holder = new ViewHolder();
             holder.item_title = (TextView) convertView.findViewById(R.id.item_title);
@@ -87,24 +84,31 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
+
         convertView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view){
                 // Logs de debug
                 Log.v("Adapter Pos: ", String.valueOf(position));
-                Log.i("Atapter Title: ", items.get(position).getTitle().toString());
+                Log.i("Atapter Title: ", getItem(position).getTitle().toString());
                 Intent intent = new Intent(adapterContext, EpisodeDetailActivity.class);
                 // Inserção do extra para ser obtido na activity de EpisodeDetailActivity
-                intent.putExtra("podcastItem", items.get(position));
+                intent.putExtra("podcastItem", getItem(position));
                 // Adição de flag para chamar nova activity fora de uma activity
-                intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
+                // intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
                 adapterContext.startActivity(intent);
             }
         });
 
-        Button itemButton = (Button) convertView.findViewById(R.id.item_action);
+        final ItemFeed current_item = getItem(position);
+
+        if(!current_item.getUri().toString().equals(""))
+            holder.item_action.setText("start");
+        else
+            holder.item_action.setText("baixar");
+
         // Detecção de click no botão de download
-        itemButton.setOnClickListener(new View.OnClickListener() {
+        holder.item_action.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.v("Adapter Item clicked: ", String.valueOf(position));
@@ -114,15 +118,15 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
                     // Baixar arquivo caso ainda esteja baixado
                     holder.item_action.setEnabled(false);
                     Intent downloadService = new Intent(adapterContext, DownloadService.class);
-                    downloadService.setData(Uri.parse(items.get(position).getDownloadLink()));
+                    downloadService.setData(Uri.parse(current_item.getDownloadLink()));
 
-                    Log.v("CALLING: ", items.get(position).getDownloadLink());
-                    downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
+                    Log.v("CALLING: ", current_item.getDownloadLink());
+                    //downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
                     adapterContext.startService(downloadService);
                 } else if(holder.item_action.getText().toString().equals("start")){
                     // Executar áudio caso já tenha sido baixado
                     File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    File audioFile = new File(root, Uri.parse(items.get(position).getDownloadLink()).getLastPathSegment());
+                    File audioFile = new File(root, Uri.parse(getItem(position).getDownloadLink()).getLastPathSegment());
                     Uri audioUri = Uri.parse("file://" + audioFile.getAbsolutePath());
                     mPlayer = new MediaPlayer();
                     mPlayer = MediaPlayer.create(adapterContext, audioUri);
@@ -138,8 +142,19 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
             }
         });
 
-        holder.item_title.setText(getItem(position).getTitle());
-        holder.item_date.setText(getItem(position).getPubDate());
+        holder.item_title.setText(current_item.getTitle());
+        holder.item_date.setText(current_item.getPubDate());
         return convertView;
+    }
+
+    // Override dos 2 métodos abaixo para evitar troca de conteúdo da ListView ao navegar neste
+    @Override
+    public int getViewTypeCount() {
+        return getCount();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return position;
     }
 }
