@@ -95,7 +95,7 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
                 // Inserção do extra para ser obtido na activity de EpisodeDetailActivity
                 intent.putExtra("podcastItem", getItem(position));
                 // Adição de flag para chamar nova activity fora de uma activity
-                // intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addFlags(intent.FLAG_ACTIVITY_NEW_TASK);
                 adapterContext.startActivity(intent);
             }
         });
@@ -121,7 +121,7 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
                     downloadService.setData(Uri.parse(current_item.getDownloadLink()));
 
                     Log.v("CALLING: ", current_item.getDownloadLink());
-                    //downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
+                    downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
                     adapterContext.startService(downloadService);
                 } else if(holder.item_action.getText().toString().equals("start")){
                     // Executar áudio caso já tenha sido baixado

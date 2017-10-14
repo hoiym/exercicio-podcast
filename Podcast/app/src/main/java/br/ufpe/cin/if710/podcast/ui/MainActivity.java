@@ -53,11 +53,13 @@ public class MainActivity extends Activity {
     //TODO teste com outros links de podcast
 
     private ListView items;
+    Intent serviceIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        serviceIntent = new Intent(this, NotificationService.class);
 
         items = (ListView) findViewById(R.id.items);
     }
@@ -228,10 +230,13 @@ public class MainActivity extends Activity {
     public void updateListView(){
         //Adapter Personalizado
         List<ItemFeed> update_list = getListFromDB();
-        XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, update_list);
 
-        items.setAdapter(adapter);
-        items.setTextFilterEnabled(true);
+        if(update_list.size() > 1) {
+            XmlFeedAdapter adapter = new XmlFeedAdapter(getApplicationContext(), R.layout.itemlista, update_list);
+
+            items.setAdapter(adapter);
+            items.setTextFilterEnabled(true);
+        }
     }
 
     @Override
@@ -239,12 +244,14 @@ public class MainActivity extends Activity {
         super.onResume();
         IntentFilter f = new IntentFilter(DownloadService.DOWNLOAD_COMPLETE);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onDownloadCompleteEvent, f);
+        stopService(serviceIntent);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onDownloadCompleteEvent);
+        startService(serviceIntent);
     }
 
     private BroadcastReceiver onDownloadCompleteEvent=new BroadcastReceiver() {

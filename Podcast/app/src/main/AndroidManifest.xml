@@ -26,6 +26,11 @@
             android:enabled="true"
             android:exported="true" />
 
+        <service
+            android:name=".ui.NotificationService"
+            android:enabled="true"
+            android:exported="true" />
+
         <provider
             android:name=".db.PodcastProvider"
             android:authorities="br.ufpe.cin.if710.podcast.feed"

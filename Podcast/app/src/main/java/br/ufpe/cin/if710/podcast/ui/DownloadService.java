@@ -23,7 +23,6 @@ public class DownloadService extends IntentService {
 
     public static final String DOWNLOAD_COMPLETE = "br.ufpe.cin.if710.services.action.DOWNLOAD_COMPLETE";
 
-
     public DownloadService() {
         super("DownloadService");
     }
