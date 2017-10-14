@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -22,20 +23,24 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import br.ufpe.cin.if710.podcast.R;
+import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.ui.DownloadService;
 import br.ufpe.cin.if710.podcast.ui.EpisodeDetailActivity;
+import br.ufpe.cin.if710.podcast.ui.MusicPlayerService;
 
 public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
 
     int linkResource;
     Context adapterContext;
     MediaPlayer mPlayer;
+    List<ItemFeed> items;
 
     public XmlFeedAdapter(Context context, int resource, List<ItemFeed> objects) {
         super(context, resource, objects);
         linkResource = resource;
         adapterContext = context;
+        objects = items;
     }
 
     /**
@@ -74,6 +79,8 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         final ViewHolder holder;
+        final Intent musicPlayerService = new Intent(adapterContext, MusicPlayerService.class);;
+
         if (convertView == null) {
             convertView = View.inflate(getContext(), linkResource, null);
             holder = new ViewHolder();
@@ -102,10 +109,20 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
 
         final ItemFeed current_item = getItem(position);
 
-        if(!current_item.getUri().toString().equals(""))
-            holder.item_action.setText("start");
-        else
+        // FSM do botão do item
+        if(current_item.getButtonState().toString().equals("0")) {
             holder.item_action.setText("baixar");
+            holder.item_action.setEnabled(true);
+        } else if(current_item.getButtonState().toString().equals("1")) {
+            holder.item_action.setText("baixar");
+            holder.item_action.setEnabled(false);
+        } else if(current_item.getButtonState().toString().equals("2")) {
+            holder.item_action.setText("play");
+            holder.item_action.setEnabled(true);
+        } else{
+            holder.item_action.setText("pause");
+            holder.item_action.setEnabled(true);
+        }
 
         // Detecção de click no botão de download
         holder.item_action.setOnClickListener(new View.OnClickListener() {
@@ -114,30 +131,48 @@ public class XmlFeedAdapter extends ArrayAdapter<ItemFeed> {
                 Log.v("Adapter Item clicked: ", String.valueOf(position));
 
                 // Configuração do botão para executar / pausar / continuar áudio
-                if(holder.item_action.getText().toString().equals("baixar")) {
-                    // Baixar arquivo caso ainda esteja baixado
-                    holder.item_action.setEnabled(false);
-                    Intent downloadService = new Intent(adapterContext, DownloadService.class);
-                    downloadService.setData(Uri.parse(current_item.getDownloadLink()));
+                if(holder.item_action.isEnabled()) {
+                    ContentValues contentValues = new ContentValues();
+                    String downloadLink = current_item.getDownloadLink();
+                    String selection = PodcastProviderContract.DOWNLOAD_LINK + " =?";
+                    String[] selectionArgs = {downloadLink};
 
-                    Log.v("CALLING: ", current_item.getDownloadLink());
-                    downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
-                    adapterContext.startService(downloadService);
-                } else if(holder.item_action.getText().toString().equals("start")){
-                    // Executar áudio caso já tenha sido baixado
-                    File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    File audioFile = new File(root, Uri.parse(getItem(position).getDownloadLink()).getLastPathSegment());
-                    Uri audioUri = Uri.parse("file://" + audioFile.getAbsolutePath());
-                    mPlayer = new MediaPlayer();
-                    mPlayer = MediaPlayer.create(adapterContext, audioUri);
-                    mPlayer.start();
-                    holder.item_action.setText("pause");
-                } else if(holder.item_action.getText().toString().equals("pause")){
-                    mPlayer.pause();
-                    holder.item_action.setText("play");
-                } else {
-                    mPlayer.start();
-                    holder.item_action.setText("pause");
+                    contentValues.put(PodcastProviderContract.TITLE, current_item.getTitle());
+                    contentValues.put(PodcastProviderContract.DATE, current_item.getPubDate());
+                    contentValues.put(PodcastProviderContract.DESCRIPTION, current_item.getDescription());
+                    contentValues.put(PodcastProviderContract.EPISODE_LINK, current_item.getLink());
+                    contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
+                    contentValues.put(PodcastProviderContract.EPISODE_URI, current_item.getUri());
+                    contentValues.put(PodcastProviderContract.AUDIO_STATE, current_item.getAudioState());
+
+                    if (holder.item_action.getText().toString().equals("baixar")) {
+                        // Baixar arquivo caso ainda esteja baixado
+                        Intent downloadService = new Intent(adapterContext, DownloadService.class);
+                        downloadService.setData(Uri.parse(current_item.getDownloadLink()));
+                        contentValues.put(PodcastProviderContract.BUTTON_STATE, "1");
+
+                        Log.v("CALLING: ", current_item.getDownloadLink());
+                        downloadService.addFlags(downloadService.FLAG_ACTIVITY_NEW_TASK);
+                        adapterContext.startService(downloadService);
+                    } else if (holder.item_action.getText().toString().equals("play")) {
+                        // Executar áudio caso já tenha sido baixado
+                        Log.d("Adapter (audio): ", getItem(position).getAudioState());
+                        contentValues.put(PodcastProviderContract.BUTTON_STATE, "3");
+                        musicPlayerService.putExtra("podcastItem", getItem(position));
+                        adapterContext.startService(musicPlayerService);
+                    } else {
+                        // Encerrar service caso pausado
+                        contentValues.put(PodcastProviderContract.BUTTON_STATE, "2");
+                        adapterContext.stopService(musicPlayerService);
+                    }
+
+                    // Atualização do estado do botão
+                    adapterContext.getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI,
+                            contentValues, selection, selectionArgs);
+
+                    // Envio de broadcast para modificação do adapter com estado do botão modificado
+                    Intent finishBroadcast = new Intent(MusicPlayerService.UPDATE_LIST);
+                    LocalBroadcastManager.getInstance(adapterContext).sendBroadcast(finishBroadcast);
                 }
             }
         });

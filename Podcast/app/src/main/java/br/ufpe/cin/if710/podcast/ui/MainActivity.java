@@ -115,7 +115,9 @@ public class MainActivity extends Activity {
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DATE)),
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DESCRIPTION)),
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DOWNLOAD_LINK)),
-                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI)));
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI)),
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.AUDIO_STATE)),
+                                             cursor.getString(cursor.getColumnIndex(PodcastProviderContract.BUTTON_STATE)));
                 listItem.add(item);
 
                 /*
@@ -188,6 +190,8 @@ public class MainActivity extends Activity {
                 contentValues.put(PodcastProviderContract.EPISODE_LINK, link);
                 contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
                 contentValues.put(PodcastProviderContract.EPISODE_URI, "");
+                contentValues.put(PodcastProviderContract.AUDIO_STATE, String.valueOf(0));
+                contentValues.put(PodcastProviderContract.BUTTON_STATE, String.valueOf(0));
 
                 String[] columns = {PodcastProviderContract.TITLE, PodcastProviderContract.DATE,
                                     PodcastProviderContract.DESCRIPTION};
@@ -244,6 +248,8 @@ public class MainActivity extends Activity {
         super.onResume();
         IntentFilter f = new IntentFilter(DownloadService.DOWNLOAD_COMPLETE);
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onDownloadCompleteEvent, f);
+        IntentFilter g = new IntentFilter(MusicPlayerService.UPDATE_LIST);
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onUpdateListEvent, g);
         stopService(serviceIntent);
     }
 
@@ -251,6 +257,7 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onDownloadCompleteEvent);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onUpdateListEvent);
         startService(serviceIntent);
     }
 
@@ -289,10 +296,19 @@ public class MainActivity extends Activity {
                 contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
                 contentValues.put(PodcastProviderContract.EPISODE_URI,
                         Uri.parse("file://" + audioFile.getAbsolutePath()).toString());
+                contentValues.put(PodcastProviderContract.BUTTON_STATE, String.valueOf(2));
             }
 
-            int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI, contentValues, selection, selectionArgs);
+            int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI,
+                    contentValues, selection, selectionArgs);
+
             Log.i("Atualizou : ", String.valueOf(updated_rows) + " item(s)");
+            updateListView();
+        }
+    };
+
+    private BroadcastReceiver onUpdateListEvent=new BroadcastReceiver() {
+        public void onReceive(Context ctxt, Intent i) {
             updateListView();
         }
     };

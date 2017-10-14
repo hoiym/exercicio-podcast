@@ -52,7 +52,9 @@ public class NotificationService extends Service {
                         cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DATE)),
                         cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DESCRIPTION)),
                         cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DOWNLOAD_LINK)),
-                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI)));
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_URI)),
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.AUDIO_STATE)),
+                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.BUTTON_STATE)));
                 listItem.add(item);
 
                 /*
@@ -117,6 +119,7 @@ public class NotificationService extends Service {
                     contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
                     contentValues.put(PodcastProviderContract.EPISODE_URI,
                             Uri.parse("file://" + audioFile.getAbsolutePath()).toString());
+                    contentValues.put(PodcastProviderContract.AUDIO_STATE, String.valueOf(0));
                 }
 
                 int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI, contentValues, selection, selectionArgs);

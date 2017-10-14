@@ -12,14 +12,19 @@ public class ItemFeed implements Serializable{
     private final String description;
     private final String downloadLink;
     private final String uri;
+    private final String audioState;
+    private final String buttonState;
 
-    public ItemFeed(String title, String link, String pubDate, String description, String downloadLink, String uri) {
+    public ItemFeed(String title, String link, String pubDate, String description,
+                    String downloadLink, String uri, String audioState, String buttonState) {
         this.title = title;
         this.link = link;
         this.pubDate = pubDate;
         this.description = description;
         this.downloadLink = downloadLink;
         this.uri = uri;
+        this.audioState = audioState;
+        this.buttonState = buttonState;
     }
 
     public String getTitle() {
@@ -43,6 +48,10 @@ public class ItemFeed implements Serializable{
     }
 
     public String getUri() { return uri; }
+
+    public String getAudioState() { return audioState; }
+
+    public String getButtonState() { return buttonState; }
 
     @Override
     public String toString() {
