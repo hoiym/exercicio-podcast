@@ -1,4 +1,4 @@
-package br.ufpe.cin.if710.podcast.ui;
+package br.ufpe.cin.if710.podcast.services;
 
 import android.app.Notification;
 import android.app.PendingIntent;

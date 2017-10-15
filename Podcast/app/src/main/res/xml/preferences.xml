@@ -11,4 +11,13 @@
         android:title="@string/pref_desc"
         android:defaultValue="@string/feed_link" />
 
+    <EditTextPreference
+        android:dialogTitle="@string/job_time_title"
+        android:dialogMessage="@string/job_time_msg"
+        android:key="jobTime"
+        android:negativeButtonText="@string/cancel"
+        android:positiveButtonText="@string/change"
+        android:title="@string/pref_desc"
+        android:defaultValue="@string/job_time" />
+
 </PreferenceScreen>

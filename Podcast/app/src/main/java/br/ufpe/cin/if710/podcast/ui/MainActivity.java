@@ -2,10 +2,7 @@ package br.ufpe.cin.if710.podcast.ui;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
-import android.content.ClipData;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -18,14 +15,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -41,14 +34,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import br.ufpe.cin.if710.podcast.R;
-import br.ufpe.cin.if710.podcast.db.PodcastDBHelper;
-import br.ufpe.cin.if710.podcast.db.PodcastProvider;
 import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
 import br.ufpe.cin.if710.podcast.domain.XmlFeedParser;
+import br.ufpe.cin.if710.podcast.services.DownloadService;
+import br.ufpe.cin.if710.podcast.services.MusicPlayerService;
+import br.ufpe.cin.if710.podcast.services.NotificationService;
 import br.ufpe.cin.if710.podcast.ui.adapter.XmlFeedAdapter;
-
-import static br.ufpe.cin.if710.podcast.db.PodcastDBHelper.columns;
 
 public class MainActivity extends Activity {
 
@@ -101,7 +93,6 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         new DownloadXmlTask().execute(RSS_FEED);
-        updateListView();
     }
 
     @Override
@@ -131,14 +122,6 @@ public class MainActivity extends Activity {
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.AUDIO_STATE)),
                                              cursor.getString(cursor.getColumnIndex(PodcastProviderContract.BUTTON_STATE)));
                 listItem.add(item);
-
-                /*
-                Log.v("Getting: ", cursor.getString(cursor.getColumnIndex(PodcastProviderContract.TITLE)) + " " +
-                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.EPISODE_LINK)) + " " +
-                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DATE)) + " " +
-                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DESCRIPTION)) + " " +
-                        cursor.getString(cursor.getColumnIndex(PodcastProviderContract.DOWNLOAD_LINK)));
-                */
                 cursor.moveToNext();
             } while(!cursor.isAfterLast());
         }

@@ -1,6 +1,5 @@
-package br.ufpe.cin.if710.podcast.ui;
+package br.ufpe.cin.if710.podcast.services;
 
-import android.app.IntentService;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -24,6 +23,7 @@ import java.util.List;
 import br.ufpe.cin.if710.podcast.R;
 import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
 import br.ufpe.cin.if710.podcast.domain.ItemFeed;
+import br.ufpe.cin.if710.podcast.ui.MainActivity;
 
 /**
  * Created by Hoi on 13/10/2017.
