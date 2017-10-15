@@ -75,7 +75,7 @@ public class NotificationService extends Service {
         return listItem;
     }
 
-    private BroadcastReceiver onDownloadCompleteEvent = new BroadcastReceiver() {
+    private BroadcastReceiver onUpdateEvent = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -83,10 +83,11 @@ public class NotificationService extends Service {
             if(action.equals(NotificationService.DOWNLOAD_COMPLETE)){
 
                 // Exibição da notificação caso usuário não esteja com app em primeiro plano
-                int mNotificationId = 001;
-                NotificationManager mNotifyMgr =
-                        (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-                mNotifyMgr.notify(mNotificationId, mBuilder.build());
+                mBuilder =
+                    new NotificationCompat.Builder(context)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle("Podcast")
+                        .setContentText("Download completed");
 
                 List<ItemFeed> listItem = getListFromDB();
                 int listFromDBsize = listItem.size();
@@ -120,11 +121,35 @@ public class NotificationService extends Service {
                     contentValues.put(PodcastProviderContract.EPISODE_URI,
                             Uri.parse("file://" + audioFile.getAbsolutePath()).toString());
                     contentValues.put(PodcastProviderContract.AUDIO_STATE, String.valueOf(0));
+                    contentValues.put(PodcastProviderContract.BUTTON_STATE, String.valueOf(2));
                 }
 
                 int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI, contentValues, selection, selectionArgs);
                 Log.i("Atualizou (service): ", String.valueOf(updated_rows) + " item(s)");
+            } else {
+                mBuilder =
+                    new NotificationCompat.Builder(context)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle("Podcast")
+                        .setContentText("List updated");
             }
+
+            resultIntent = new Intent(context, MainActivity.class);
+
+            PendingIntent resultPendingIntent =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    resultIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
+            mBuilder.setContentIntent(resultPendingIntent);
+
+            int mNotificationId = 001;
+            NotificationManager mNotifyMgr =
+                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            mNotifyMgr.notify(mNotificationId, mBuilder.build());
         }
     };
 
@@ -134,32 +159,16 @@ public class NotificationService extends Service {
 
         Log.d("Created: ", "NotificationService");
 
-        mBuilder =
-            new NotificationCompat.Builder(this)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Podcast")
-                .setContentText("Download completed");
-
-        resultIntent = new Intent(this, MainActivity.class);
-
-        PendingIntent resultPendingIntent =
-            PendingIntent.getActivity(
-                this,
-                0,
-                resultIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT
-        );
-
-        mBuilder.setContentIntent(resultPendingIntent);
-
         IntentFilter f = new IntentFilter(DownloadService.DOWNLOAD_COMPLETE);
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onDownloadCompleteEvent, f);
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onUpdateEvent, f);
+        IntentFilter g = new IntentFilter(MusicPlayerService.UPDATE_LIST);
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(onUpdateEvent, g);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onDownloadCompleteEvent);
+        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(onUpdateEvent);
     }
 
     @Override

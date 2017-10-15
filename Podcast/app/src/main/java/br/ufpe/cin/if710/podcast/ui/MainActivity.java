@@ -1,5 +1,6 @@
 package br.ufpe.cin.if710.podcast.ui;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -9,11 +10,14 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -62,6 +66,14 @@ public class MainActivity extends Activity {
         serviceIntent = new Intent(this, NotificationService.class);
 
         items = (ListView) findViewById(R.id.items);
+
+        // Solicitação de permissão
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+            }
+        }
     }
 
     @Override
@@ -219,14 +231,10 @@ public class MainActivity extends Activity {
                 cursor.close();
             }
 
-            updateListView();
-            Log.i("Aqui", "");
-
-            /* Log para verificação da quantidade de itens inseridos
-            Cursor cursor = getContentResolver().query(PodcastProviderContract.EPISODE_LIST_URI, null,
-                                                       null, null, null);
-            Log.v("Count items: ", String.valueOf(cursor.getCount()));
-            */
+            // Envio de broadcast avisando sbore atualização da lista, para possível
+            // notificação quando app está no background
+            Intent finishBroadcast = new Intent(MusicPlayerService.UPDATE_LIST);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(finishBroadcast);
         }
     }
 

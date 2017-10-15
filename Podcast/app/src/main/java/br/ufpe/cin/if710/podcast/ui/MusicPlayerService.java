@@ -8,9 +8,12 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+
+import java.io.File;
 
 import br.ufpe.cin.if710.podcast.db.PodcastProvider;
 import br.ufpe.cin.if710.podcast.db.PodcastProviderContract;
@@ -48,7 +51,30 @@ public class MusicPlayerService extends Service {
 
                 @Override
                 public void onCompletion(MediaPlayer mp) {
-                    // encerra se foi iniciado com o mesmo ID
+                    // Deletar item da memória quando concluir
+                    File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File audioFile = new File(root, Uri.parse(item.getDownloadLink()).getLastPathSegment());
+                    boolean deleted = audioFile.delete();
+
+                    if(deleted) {
+                        ContentValues contentValues = new ContentValues();
+                        String downloadLink = item.getDownloadLink();
+                        String selection = PodcastProviderContract.DOWNLOAD_LINK + " =?";
+                        String[] selectionArgs = {downloadLink};
+
+                        contentValues.put(PodcastProviderContract.TITLE, item.getTitle());
+                        contentValues.put(PodcastProviderContract.DATE, item.getPubDate());
+                        contentValues.put(PodcastProviderContract.DESCRIPTION, item.getDescription());
+                        contentValues.put(PodcastProviderContract.EPISODE_LINK, item.getLink());
+                        contentValues.put(PodcastProviderContract.DOWNLOAD_LINK, downloadLink);
+                        contentValues.put(PodcastProviderContract.EPISODE_URI, "");
+                        contentValues.put(PodcastProviderContract.AUDIO_STATE, String.valueOf(0));
+                        contentValues.put(PodcastProviderContract.BUTTON_STATE, "0");
+
+                        int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI,
+                                contentValues, selection, selectionArgs);
+                    }
+
                     stopSelf(mStartID);
                 }
             });
@@ -84,7 +110,8 @@ public class MusicPlayerService extends Service {
             contentValues.put(PodcastProviderContract.AUDIO_STATE, String.valueOf(current_audio_state));
             contentValues.put(PodcastProviderContract.BUTTON_STATE, "2");
 
-            int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI, contentValues, selection, selectionArgs);
+            int updated_rows = getContentResolver().update(PodcastProviderContract.EPISODE_LIST_URI,
+                    contentValues, selection, selectionArgs);
 
             Log.i("Atualizou (MPservice): ", String.valueOf(updated_rows) + " item(s)");
 
